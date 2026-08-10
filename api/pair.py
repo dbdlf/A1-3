@@ -3,7 +3,7 @@
 
 흐름
   1) 사용자의 자연어 입력을 검증한다.
-  2) Claude에게 무드 해석 + 후보곡 + 검색 키워드 + 창작 문장을 JSON으로 받는다.
+  2) Gemini에게 무드 해석 + 후보곡 + 검색 키워드 + 창작 문장을 JSON으로 받는다.
   3) 후보곡을 iTunes Search API에 하나씩 대조해 '실제로 있는 곡'만 남긴다.
   4) 검증 통과가 적으면 키워드 검색으로 보충한 뒤 프런트에 돌려준다.
 
@@ -19,9 +19,11 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler
 
-import anthropic
+from google import genai
+from google.genai import errors as genai_errors
+from google.genai import types
 
-MODEL = "claude-opus-5"
+MODEL = "gemini-2.5-flash"
 MIN_LEN = 10
 MAX_LEN = 500
 ITUNES = "https://itunes.apple.com/search"
@@ -45,16 +47,15 @@ SYSTEM_PROMPT = """당신은 '무드 페어링'의 음악 큐레이터입니다.
 1. mood_summary — 사용자의 입력을 한 문장으로 되짚어줍니다. 요약이 아니라 "이렇게 읽었어요"에
    가깝게, 사용자가 명시하지 않은 결까지 짚어주면 좋습니다.
 
-2. candidates — 실제로 존재하는 곡만 후보로 올립니다. 요청 개수의 두 배 정도를 제시하세요
-   (검증 단계에서 일부가 걸러집니다). artist는 음원 서비스에 등록된 표기를 그대로 쓰고,
-   title도 원제 그대로 씁니다. 한국 곡이면 한글 표기, 해외 곡이면 원어 표기를 씁니다.
+2. candidates — 실제로 존재하는 곡만 후보로 올립니다. artist는 음원 서비스에 등록된 표기를
+   그대로 쓰고, title도 원제 그대로 씁니다. 한국 곡이면 한글 표기, 해외 곡이면 원어 표기를 씁니다.
    note에는 "왜 이 곡인가"를 사용자의 조건과 연결해 한 문장으로 씁니다.
-   확신이 없는 곡은 올리지 마세요. 지어낸 곡은 검증에서 걸러지고 결과만 빈약해집니다.
+   확신이 없는 곡은 올리지 마세요. 지어낸 곡은 검증 단계에서 걸러지고 결과만 빈약해집니다.
 
 3. search_keywords — 사용자가 음원 앱이나 유튜브에 그대로 넣어볼 수 있는 검색어 3개.
    장르·편성·분위기를 조합한, 실제로 검색 결과가 나올 법한 표현으로 씁니다.
 
-4. original_text — 이 순간을 위한 짧은 글 2~3문장. **기존 문학 작품을 인용하지 마세요.**
+4. original_text — 이 순간을 위한 짧은 글 2~3문장. 기존 문학 작품을 인용하지 마세요.
    지금 이 입력을 위해 새로 씁니다. 위로하려 애쓰거나 교훈을 주려 하지 말고,
    사용자가 적은 장면 안에 머무는 글을 쓰세요.
 
@@ -64,6 +65,8 @@ SYSTEM_PROMPT = """당신은 '무드 페어링'의 음악 큐레이터입니다.
 - 제외 목록에 있는 곡은 절대 다시 올리지 않습니다.
 - 모든 텍스트는 한국어로 씁니다."""
 
+# Gemini의 responseSchema는 OpenAPI 3.0 스키마의 부분집합을 쓴다.
+# additionalProperties 는 지원 대상이 아니므로 넣지 않는다.
 SCHEMA = {
     "type": "object",
     "properties": {
@@ -78,14 +81,14 @@ SCHEMA = {
                     "note": {"type": "string"},
                 },
                 "required": ["artist", "title", "note"],
-                "additionalProperties": False,
+                "propertyOrdering": ["artist", "title", "note"],
             },
         },
         "search_keywords": {"type": "array", "items": {"type": "string"}},
         "original_text": {"type": "string"},
     },
     "required": ["mood_summary", "candidates", "search_keywords", "original_text"],
-    "additionalProperties": False,
+    "propertyOrdering": ["mood_summary", "candidates", "search_keywords", "original_text"],
 }
 
 
@@ -94,7 +97,7 @@ SCHEMA = {
 # ------------------------------------------------------------------
 
 def _norm(s):
-    """비교용 정규화 — 공백/괄호/구두점을 지우고 소문자로."""
+    """비교용 정규화 — 괄호/구두점/공백을 지우고 소문자로."""
     s = re.sub(r"\([^)]*\)|\[[^\]]*\]", " ", s or "")
     s = re.sub(r"[^0-9a-z가-힣]", "", s.lower())
     return s
@@ -161,10 +164,10 @@ def keyword_fill(keywords, need, seen):
 
 
 # ------------------------------------------------------------------
-# Claude 호출
+# Gemini 호출
 # ------------------------------------------------------------------
 
-def ask_claude(query, lyrics, count, adjust, exclude):
+def ask_gemini(query, lyrics, count, adjust, exclude):
     lines = ["[사용자 입력]", query, ""]
 
     if lyrics == "with":
@@ -180,27 +183,32 @@ def ask_claude(query, lyrics, count, adjust, exclude):
         lines.extend("- " + x for x in exclude[:40])
 
     lines.append("")
+    # 검증에서 일부가 걸러지므로 필요한 수의 두 배를 받아둔다.
     lines.append("후보곡은 %d곡 정도 올려주세요." % (count * 2))
 
-    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-    response = client.messages.create(
+    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    response = client.models.generate_content(
         model=MODEL,
-        max_tokens=4000,
-        system=SYSTEM_PROMPT,
-        # 지연에 민감한 화면이라 효과 대비 응답이 빠른 low로 둔다.
-        output_config={"effort": "low", "format": {"type": "json_schema", "schema": SCHEMA}},
-        messages=[{"role": "user", "content": "\n".join(lines)}],
+        contents="\n".join(lines),
+        config=types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,
+            response_mime_type="application/json",
+            response_schema=SCHEMA,
+            temperature=1.0,
+            max_output_tokens=3000,
+            # 지연에 민감한 화면이라 추론 단계를 끄고 응답 속도를 우선한다.
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+        ),
     )
 
-    if response.stop_reason == "refusal":
-        raise ValueError("이 요청은 처리할 수 없어요. 다른 문장으로 시도해주세요.")
-
-    text = next(b.text for b in response.content if b.type == "text")
+    text = (response.text or "").strip()
+    if not text:
+        raise ValueError("추천을 만들지 못했어요. 문장을 조금 바꿔서 다시 시도해주세요.")
     return json.loads(text)
 
 
 # ------------------------------------------------------------------
-# 핸들러
+# 요청 처리
 # ------------------------------------------------------------------
 
 def build_response(body):
@@ -213,7 +221,7 @@ def build_response(body):
     if any(p in query for p in CRISIS_PATTERNS):
         return 200, {"safety": CRISIS_MESSAGE}
 
-    if not os.environ.get("ANTHROPIC_API_KEY"):
+    if not os.environ.get("GEMINI_API_KEY"):
         return 500, {"message": "서버 설정이 아직 끝나지 않았어요. 잠시 후 다시 시도해주세요."}
 
     count = body.get("count")
@@ -222,7 +230,7 @@ def build_response(body):
     adjust = (body.get("adjust") or "").strip()[:120]
     exclude = [str(x)[:120] for x in (body.get("exclude") or [])][:40]
 
-    data = ask_claude(query, lyrics, count, adjust, exclude)
+    data = ask_gemini(query, lyrics, count, adjust, exclude)
     candidates = data.get("candidates", [])[:12]
     keywords = [k for k in data.get("search_keywords", []) if isinstance(k, str)][:3]
 
@@ -281,9 +289,13 @@ class handler(BaseHTTPRequestHandler):
             self._send(status, payload)
         except ValueError as e:
             self._send(400, {"message": str(e)})
-        except anthropic.RateLimitError:
-            self._send(429, {"message": "지금 요청이 많아요. 잠시 후 다시 시도해주세요."})
-        except anthropic.APIStatusError:
+        except genai_errors.ClientError as e:
+            # 무료 티어는 분당 요청 수 제한이 있어 429가 가장 흔하다.
+            if getattr(e, "code", None) == 429:
+                self._send(429, {"message": "잠깐 쉬었다 가야 해요. 1분 뒤에 다시 시도해주세요."})
+            else:
+                self._send(400, {"message": "요청을 처리하지 못했어요. 문장을 바꿔서 다시 시도해주세요."})
+        except genai_errors.ServerError:
             self._send(502, {"message": "추천 서버와 연결하지 못했어요. 잠시 후 다시 시도해주세요."})
         except Exception:
             self._send(500, {"message": "지금은 곡을 찾지 못했어요. 잠시 후 다시 시도해주세요."})

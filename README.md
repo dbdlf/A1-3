@@ -32,7 +32,7 @@ LLM에게 곡을 추천하게 하면 **존재하지 않는 곡을 실존 가수 
 사용자 자연어 입력
       │
       ▼
-[1] Claude API  →  무드 해석 + 후보곡 N곡 + 검색 키워드 + 창작 문장 (JSON 고정 스키마)
+[1] Gemini API  →  무드 해석 + 후보곡 N곡 + 검색 키워드 + 창작 문장 (JSON 고정 스키마)
       │
       ▼
 [2] iTunes Search API로 후보곡을 하나씩 대조 (병렬 조회)
@@ -53,7 +53,7 @@ LLM에게 곡을 추천하게 하면 **존재하지 않는 곡을 실존 가수 
 |---|---|
 | 프론트엔드 | HTML · CSS · Vanilla JavaScript (프레임워크 없음) |
 | 백엔드 | Vercel Serverless Functions (Python 3.12) |
-| AI | Claude API (`claude-opus-5`) — 구조화 출력(JSON Schema) |
+| AI | Google Gemini API (`gemini-2.5-flash`) — 구조화 출력(responseSchema) |
 | 음원 데이터 | iTunes Search API (API 키 불필요) |
 | 저장소 | 브라우저 localStorage (검색 기록 · 서버 전송 없음) |
 | 배포 | GitHub → Vercel 자동 배포 |
@@ -70,8 +70,8 @@ mood-pairing/
 ├── js/
 │   └── main.js         # 폼 검증, fetch, 결과 렌더, 미리듣기, 검색 기록
 ├── api/
-│   └── pair.py         # 서버리스 함수 — Claude 호출 + iTunes 실존 검증
-├── requirements.txt    # Python 의존성
+│   └── pair.py         # 서버리스 함수 — Gemini 호출 + iTunes 실존 검증
+├── requirements.txt    # Python 의존성 (google-genai)
 ├── vercel.json         # 함수 실행 시간 설정
 ├── .env.example        # 환경 변수 템플릿
 └── .gitignore
@@ -85,8 +85,9 @@ mood-pairing/
 
 | 이름 | 설명 | 필수 |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | Claude API 키 ([발급](https://console.anthropic.com/settings/keys)) | ✅ |
+| `GEMINI_API_KEY` | Google Gemini API 키 ([발급](https://aistudio.google.com/apikey)) | ✅ |
 
+Google AI Studio에서 무료로 발급받을 수 있고, **무료 티어**로 사용합니다.
 iTunes Search API는 **키가 필요 없습니다.**
 
 ### 로컬 개발
@@ -101,7 +102,7 @@ cp .env.example .env
 
 Vercel 대시보드 → 프로젝트 → **Settings → Environment Variables** 에서 추가합니다.
 
-- Name: `ANTHROPIC_API_KEY`
+- Name: `GEMINI_API_KEY`
 - Value: 발급받은 키
 - Environment: Production, Preview, Development 모두 체크
 
@@ -188,17 +189,26 @@ GitHub 저장소를 Vercel에 연결해두면 push할 때마다 자동 배포됩
 
 ## 개인정보 및 데이터 처리
 
-- **검색 기록은 브라우저 localStorage에만 저장**되며 서버로 전송되지 않습니다.
+- **검색 기록은 브라우저 localStorage에만 저장**되며 이 서비스의 서버로 전송되지 않습니다.
 - 기록은 **열람 전용**입니다. 다음 검색 추천에 반영되지 않습니다.
   추천 알고리즘이 사용자를 자기 이력에 가두는 문제를 피하기 위한 의도적인 설계입니다.
-- 서버는 요청받은 문장을 Claude API로 전달할 뿐 별도로 저장하지 않습니다.
+- 서버는 요청받은 문장을 Gemini API로 전달할 뿐 별도로 저장하지 않습니다.
 - 전체 삭제 버튼으로 즉시 지울 수 있고, 텍스트 파일로 내보낼 수 있습니다.
+
+> ⚠️ 다만 **곡을 고르기 위해 입력 문장이 Google Gemini API로 전송**되며,
+> 이 프로젝트는 무료 티어를 사용합니다. Google은 무료 티어의 데이터를 제품 개선에
+> 활용할 수 있다고 안내하고 있으므로, 민감한 개인 정보는 입력하지 않도록
+> 서비스 내 FAQ에도 이 사실을 명시했습니다.
 
 ---
 
 ## 알려진 제약
 
-- iTunes Search API에 요청 빈도 제한이 있습니다(대략 분당 20회 수준으로 알려짐).
+- **Gemini 무료 티어에 분당·일일 요청 제한이 있습니다.** `gemini-2.5-flash` 기준으로
+  분당 요청 수가 10회 안팎이라, 연속으로 빠르게 검색하면 429 오류가 날 수 있습니다
+  (사용자에게는 "1분 뒤에 다시 시도해주세요"로 안내됩니다).
+  정확한 한도는 프로젝트마다 다르므로 [AI Studio 콘솔](https://aistudio.google.com/)에서 확인하세요.
+- iTunes Search API에도 요청 빈도 제한이 있습니다(대략 분당 20회 수준으로 알려짐).
   후보곡 검증에 곡당 1회씩 요청하므로, 연속으로 여러 번 검색하면 일시적으로 결과가 줄 수 있습니다.
 - `previewUrl`은 선택 필드라 미리듣기가 없는 곡이 있습니다. 이 경우 재생 버튼이 비활성화됩니다.
 - 동명이곡이나 리메이크 버전이 매칭될 수 있습니다. 미리듣기로 확인을 권합니다.

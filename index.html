@@ -225,7 +225,7 @@
         <details class="faq__item">
           <summary>어떻게 동작하나요?</summary>
           <p>
-            입력한 문장을 AI(Claude)가 해석해 무드 요약, 후보곡, 검색 키워드, 그리고 짧은 글을 만듭니다.
+            입력한 문장을 AI(Google Gemini)가 해석해 무드 요약, 후보곡, 검색 키워드, 그리고 짧은 글을 만듭니다.
             그다음 후보곡을 하나씩 <strong>iTunes Search API</strong>에 조회해 실제로 존재하는지 확인하고,
             검증을 통과한 곡만 화면에 내보냅니다. AI는 “무엇을 찾을지”를 정하고,
             실존 여부는 실제 음원 데이터가 판정합니다.
@@ -249,9 +249,18 @@
         <details class="faq__item">
           <summary>제 검색 기록으로 취향을 학습하나요?</summary>
           <p>
-            아니요. 기록은 브라우저의 localStorage에만 저장되고, 서버로 전송되지 않으며,
-            다음 검색에 반영되지도 않습니다. 지금 입력한 문장이 유일한 기준입니다.
+            아니요. 검색 기록은 브라우저의 localStorage에만 저장되고, 이 서비스의 서버로
+            전송되지 않으며, 다음 검색에 반영되지도 않습니다. 지금 입력한 문장이 유일한 기준입니다.
             추천 알고리즘이 사람을 자기 이력에 가두는 문제를 피하려는 의도적인 선택입니다.
+          </p>
+        </details>
+        <details class="faq__item">
+          <summary>입력한 문장은 어디까지 전달되나요?</summary>
+          <p>
+            곡을 고르기 위해 <strong>Google Gemini API로 전송</strong>됩니다. 이 서비스는
+            무료 티어를 사용하는데, Google은 무료 티어의 데이터를 제품 개선에 활용할 수 있다고
+            안내하고 있습니다. 민감한 개인적인 내용은 적지 않으시길 권합니다.
+            이 서비스 자체는 입력 내용을 저장하지 않습니다.
           </p>
         </details>
         <details class="faq__item">
@@ -266,7 +275,7 @@
 
       <p class="tech">
         HTML · CSS · Vanilla JavaScript / Vercel Serverless Functions (Python) /
-        Claude API / iTunes Search API
+        Google Gemini API / iTunes Search API
       </p>
     </div>
   </section>
