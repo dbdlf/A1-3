@@ -8,7 +8,9 @@
 
   var MIN_LEN = 10;
   var MAX_LEN = 500;
-  var TIMEOUT_MS = 15000;
+  // 실측: 로컬에서 AI 응답 7초 + iTunes 검증 3초 ≈ 10초.
+  // 배포 환경은 콜드 스타트가 더 붙으므로 여유를 둔다.
+  var TIMEOUT_MS = 25000;
   var STORAGE_KEY = "moodPairing.history.v1";
   var HISTORY_LIMIT = 30;
 

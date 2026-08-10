@@ -71,6 +71,7 @@ mood-pairing/
 │   └── main.js         # 폼 검증, fetch, 결과 렌더, 미리듣기, 검색 기록
 ├── api/
 │   └── pair.py         # 서버리스 함수 — Gemini 호출 + iTunes 실존 검증
+├── dev_server.py       # 로컬 개발용 서버 (배포에는 쓰이지 않음)
 ├── requirements.txt    # Python 의존성 (google-genai)
 ├── vercel.json         # 함수 실행 시간 설정
 ├── .env.example        # 환경 변수 템플릿
@@ -117,20 +118,29 @@ Vercel 대시보드 → 프로젝트 → **Settings → Environment Variables** 
 
 ### 로컬 실행
 
-Vercel Serverless Functions를 로컬에서 돌리려면 Vercel CLI가 필요합니다.
+의존성을 설치하고,
 
 ```bash
-npm i -g vercel
+pip install -r requirements.txt
 ```
+
+포함된 개발 서버를 실행합니다.
 
 ```bash
-vercel dev
+python dev_server.py
 ```
 
-`http://localhost:3000` 에서 프론트와 `/api/pair` 가 함께 동작합니다.
+`http://localhost:8123` 에서 프론트와 `/api/pair` 가 함께 동작합니다.
+`dev_server.py`는 `.env`를 읽어 `api/pair.py`의 실제 로직(`dispatch`)을 그대로 호출하므로
+배포 환경과 동일하게 동작합니다. 포트를 바꾸려면 `python dev_server.py 3000`.
 
-> `python -m http.server` 같은 정적 서버로 열면 화면은 뜨지만 `/api/pair` 호출이 404가 납니다.
-> AI 기능을 확인하려면 `vercel dev`를 쓰세요.
+> `python -m http.server` 같은 단순 정적 서버로 열면 화면은 뜨지만 `/api/pair` 호출이 404가 납니다.
+>
+> **왜 `vercel dev`를 쓰지 않나요?**
+> Vercel CLI는 로그인할 때 컴퓨터 이름을 HTTP 헤더에 담아 보내는데,
+> HTTP 헤더는 Latin-1(0~255)만 담을 수 있어서 **컴퓨터 이름이 한글이면 로그인 자체가 실패**합니다
+> (`Cannot convert argument to a ByteString ...`). `dev_server.py`는 이 문제를 우회합니다.
+> 배포는 어차피 GitHub↔Vercel 웹 연동으로 하므로 CLI가 없어도 됩니다.
 
 ### 배포
 
@@ -181,7 +191,7 @@ GitHub 저장소를 Vercel에 연결해두면 push할 때마다 자동 배포됩
 | 빈 입력 / 10자 미만 | "조금만 더 자세히 적어주세요. 길수록 정확해져요." |
 | 500자 초과 | 실시간 글자수 카운터 경고 + 제출 차단 |
 | API 오류 (4xx / 5xx) | "지금은 곡을 찾지 못했어요. 잠시 후 다시 시도해주세요." |
-| 15초 초과 | `AbortController`로 중단 → "응답이 지연되고 있어요." |
+| 25초 초과 | `AbortController`로 중단 → "응답이 지연되고 있어요." |
 | 검증 통과 곡 0개 | 키워드 검색으로 보충 → 그래도 없으면 다시 표현해달라고 안내 |
 | 위기 표현 감지 | 추천 대신 상담 안내(자살예방 상담전화 109) 노출 |
 

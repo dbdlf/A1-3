@@ -23,7 +23,7 @@ from google import genai
 from google.genai import errors as genai_errors
 from google.genai import types
 
-MODEL = "gemini-2.5-flash"
+MODEL = "gemini-3.6-flash"
 MIN_LEN = 10
 MAX_LEN = 500
 ITUNES = "https://itunes.apple.com/search"
@@ -196,8 +196,9 @@ def ask_gemini(query, lyrics, count, adjust, exclude):
             response_schema=SCHEMA,
             temperature=1.0,
             max_output_tokens=3000,
-            # 지연에 민감한 화면이라 추론 단계를 끄고 응답 속도를 우선한다.
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
+            # 지연에 민감한 화면이라 추론 깊이를 낮춰 응답 속도를 우선한다.
+            # (Gemini 3.x 계열은 thinking_budget 대신 thinking_level 을 받는다)
+            thinking_config=types.ThinkingConfig(thinking_level="low"),
         ),
     )
 
@@ -266,6 +267,23 @@ def build_response(body):
     }
 
 
+def dispatch(body):
+    """요청 본문 → (HTTP 상태, 응답 payload). 배포용 handler와 로컬 dev_server가 공유한다."""
+    try:
+        return build_response(body)
+    except ValueError as e:
+        return 400, {"message": str(e)}
+    except genai_errors.ClientError as e:
+        # 무료 티어는 분당 요청 수 제한이 있어 429가 가장 흔하다.
+        if getattr(e, "code", None) == 429:
+            return 429, {"message": "잠깐 쉬었다 가야 해요. 1분 뒤에 다시 시도해주세요."}
+        return 400, {"message": "요청을 처리하지 못했어요. 문장을 바꿔서 다시 시도해주세요."}
+    except genai_errors.ServerError:
+        return 502, {"message": "추천 서버와 연결하지 못했어요. 잠시 후 다시 시도해주세요."}
+    except Exception:
+        return 500, {"message": "지금은 곡을 찾지 못했어요. 잠시 후 다시 시도해주세요."}
+
+
 class handler(BaseHTTPRequestHandler):
     def _send(self, status, payload):
         raw = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -284,21 +302,8 @@ class handler(BaseHTTPRequestHandler):
             self._send(400, {"message": "요청을 읽지 못했어요."})
             return
 
-        try:
-            status, payload = build_response(body)
-            self._send(status, payload)
-        except ValueError as e:
-            self._send(400, {"message": str(e)})
-        except genai_errors.ClientError as e:
-            # 무료 티어는 분당 요청 수 제한이 있어 429가 가장 흔하다.
-            if getattr(e, "code", None) == 429:
-                self._send(429, {"message": "잠깐 쉬었다 가야 해요. 1분 뒤에 다시 시도해주세요."})
-            else:
-                self._send(400, {"message": "요청을 처리하지 못했어요. 문장을 바꿔서 다시 시도해주세요."})
-        except genai_errors.ServerError:
-            self._send(502, {"message": "추천 서버와 연결하지 못했어요. 잠시 후 다시 시도해주세요."})
-        except Exception:
-            self._send(500, {"message": "지금은 곡을 찾지 못했어요. 잠시 후 다시 시도해주세요."})
+        status, payload = dispatch(body)
+        self._send(status, payload)
 
     def do_GET(self):
         self._send(405, {"message": "POST로 요청해주세요."})
