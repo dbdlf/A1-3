@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/pair.py": {
+      "maxDuration": 60
+    }
+  }
+}

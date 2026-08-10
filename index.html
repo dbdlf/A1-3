@@ -1,0 +1,283 @@
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="제목도 가수도 모르는 곡을, 문장으로 찾습니다. 지금의 기분과 취향을 자유롭게 적으면 AI가 실존이 검증된 곡과 그 순간을 위한 짧은 글을 건넵니다." />
+<title>무드 페어링 — 문장으로 찾는 음악</title>
+<link rel="stylesheet" href="/css/style.css" />
+
+<header class="nav" id="nav">
+  <div class="nav__inner">
+    <a class="nav__logo" href="#home">
+      <span class="nav__logo-mark" aria-hidden="true"></span>
+      무드 페어링
+    </a>
+    <button class="nav__toggle" id="navToggle" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navMenu">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="nav__menu" id="navMenu">
+      <a href="#pair">무드 페어링</a>
+      <a href="#guide">이렇게 검색해보세요</a>
+      <a href="#history">검색 기록</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- 1. HERO -->
+  <section class="hero" id="home">
+    <div class="hero__glow" aria-hidden="true"></div>
+    <div class="wrap hero__inner">
+      <p class="hero__eyebrow">자연어 음악 검색</p>
+      <h1 class="hero__title">
+        제목도 가수도 모르는 곡을,<br /><em>문장으로</em> 찾습니다.
+      </h1>
+      <p class="hero__lead">
+        모든 음원 앱의 검색창은 이름을 알아야 작동합니다.
+        하지만 우리가 음악을 찾는 이유는 대개 이름이 아니라 <strong>상태</strong>죠.
+        지금의 기분·상황·취향을 그대로 적어보세요.
+      </p>
+      <a class="btn btn--primary hero__cta" href="#pair">지금 찾아보기</a>
+    </div>
+  </section>
+
+  <!-- 2. 무드 페어링 (핵심 기능) -->
+  <section class="section" id="pair">
+    <div class="wrap">
+      <h2 class="section__title">무드 페어링</h2>
+      <p class="section__desc">
+        길고 구체적으로 쓸수록 결과가 좋아집니다. 모순되는 조건도 괜찮아요.
+      </p>
+
+      <form class="form" id="pairForm" novalidate>
+        <label class="form__label" for="queryInput">지금 어떤 순간인가요?</label>
+        <textarea
+          id="queryInput"
+          class="form__textarea"
+          rows="4"
+          maxlength="500"
+          placeholder="예) 새벽에 창문 열고 운전할 때 듣고 싶은데, 너무 처지지는 않았으면 좋겠어요. 보컬이 앞에 나서지 않고 악기에 섞여 있는 쪽이 좋아요."
+        ></textarea>
+
+        <div class="form__meta">
+          <span class="form__count"><span id="charCount">0</span> / 500자</span>
+          <span class="form__hint">10자 이상 입력해주세요</span>
+        </div>
+
+        <p class="chips__label">예시로 시작해보기</p>
+        <div class="chips" id="exampleChips">
+          <button type="button" class="chip" data-fill="가사는 밝은데 멜로디는 어딘가 쓸쓸한 곡이 듣고 싶어요. 신나게 틀어놓고 혼자 조용해지는 그런 노래요.">가사는 밝은데 멜로디는 쓸쓸한</button>
+          <button type="button" class="chip" data-fill="후렴에서 확 터뜨리지 않고 끝까지 눌러 담는 곡. 감정을 폭발시키는 대신 계속 참는 느낌의 노래를 찾고 있어요.">후렴에서 터뜨리지 않는 곡</button>
+          <button type="button" class="chip" data-fill="연주자 개인의 표현이나 기교가 거의 들어가지 않고, 악보의 구조와 리듬이 그대로 드러나는 담백한 연주를 듣고 싶어요.">악보 그대로인 담백한 연주</button>
+          <button type="button" class="chip" data-fill="이사 온 첫날 밤, 짐도 안 풀린 빈 방에서 바닥에 앉아 듣기 좋은 곡. 외롭기보다는 조금 설레는 쪽으로요.">이사 온 첫날 밤 빈 방에서</button>
+        </div>
+
+        <fieldset class="options">
+          <legend class="options__legend">선택 옵션</legend>
+          <div class="options__row">
+            <label class="options__item">
+              <span>가사</span>
+              <select id="lyricsSelect">
+                <option value="any">상관없음</option>
+                <option value="with">가사 있는 곡</option>
+                <option value="without">가사 없는 곡</option>
+              </select>
+            </label>
+            <label class="options__item">
+              <span>곡 개수</span>
+              <select id="countSelect">
+                <option value="3">3곡</option>
+                <option value="5" selected>5곡</option>
+              </select>
+            </label>
+          </div>
+        </fieldset>
+
+        <button type="submit" class="btn btn--primary btn--block" id="submitBtn">곡과 문장 받기</button>
+      </form>
+
+      <!-- 상태 영역 -->
+      <div class="status" id="status" role="status" aria-live="polite" hidden></div>
+
+      <!-- 결과 영역 -->
+      <div class="result" id="result" hidden>
+        <div class="result__head">
+          <p class="result__label">이 순간을 이렇게 읽었어요</p>
+          <p class="result__summary" id="resultSummary"></p>
+        </div>
+
+        <div class="tracks" id="tracks"></div>
+
+        <p class="result__disclaimer">
+          AI가 고른 뒤 실제 음원 데이터베이스에서 존재를 확인한 곡만 보여드립니다.
+          그래도 원하는 곡이 아닐 수 있어요.
+        </p>
+
+        <div class="letter" id="letter">
+          <p class="letter__label">이 순간을 위해 쓰인 문장</p>
+          <blockquote class="letter__body" id="letterBody"></blockquote>
+          <p class="letter__note">기존 작품의 인용이 아니라, 방금 이 입력을 위해 새로 쓰인 글입니다.</p>
+        </div>
+
+        <div class="adjust">
+          <p class="adjust__label">결과를 조금 틀어볼까요?</p>
+          <div class="chips" id="adjustChips">
+            <button type="button" class="chip chip--sm" data-adjust="더 잔잔하게">더 잔잔하게</button>
+            <button type="button" class="chip chip--sm" data-adjust="더 오래된 곡으로">더 오래된 곡으로</button>
+            <button type="button" class="chip chip--sm" data-adjust="가사 없이">가사 없이</button>
+            <button type="button" class="chip chip--sm" data-adjust="덜 유명한 곡으로">덜 유명한 곡으로</button>
+            <button type="button" class="chip chip--sm" data-adjust="더 몰입감 있게">더 몰입감 있게</button>
+          </div>
+          <div class="adjust__custom">
+            <input
+              type="text"
+              id="adjustInput"
+              class="adjust__input"
+              maxlength="120"
+              placeholder="직접 써도 됩니다 — 예) 드럼이 더 또렷했으면, 여름 밤 느낌으로"
+            />
+            <button type="button" class="btn btn--ghost" id="adjustApply">이 방향으로</button>
+          </div>
+          <button type="button" class="btn btn--ghost btn--block" id="moreBtn">같은 무드로 다른 곡 더 보기</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 이렇게 검색해보세요 -->
+  <section class="section section--alt" id="guide">
+    <div class="wrap">
+      <h2 class="section__title">이렇게 검색해보세요</h2>
+      <p class="section__desc">
+        장르를 고르는 게 아니라, 조건을 설명하는 겁니다. 아래 두 입력의 차이가 결과를 가릅니다.
+      </p>
+
+      <div class="compare">
+        <article class="compare__card compare__card--weak">
+          <p class="compare__tag">아쉬운 입력</p>
+          <p class="compare__quote">“잔잔한 노래”</p>
+          <p class="compare__why">
+            이미 모든 앱이 잘하는 검색입니다. 조건이 하나뿐이라
+            AI도 최대공약수를 고를 수밖에 없어요.
+          </p>
+        </article>
+        <article class="compare__card compare__card--strong">
+          <p class="compare__tag">좋은 입력</p>
+          <p class="compare__quote">
+            “잔잔한데 축 처지진 않았으면 해요. 밴드 편성이 살아 있고,
+            보컬이 앞에 나서지 않는 쪽. 새벽 운전용이라 가사에 집중 안 해도 되는 곡.”
+          </p>
+          <p class="compare__why">
+            상황·온도·편성·용도가 모두 들어 있습니다. 검색창에는 넣을 수 없지만
+            문장으로는 자연스럽게 쓸 수 있는 조건들이죠.
+          </p>
+        </article>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <span class="step__num">01</span>
+          <h3 class="step__title">상황을 적습니다</h3>
+          <p>언제, 어디서, 무엇을 하면서 들을 곡인지. 장면이 구체적일수록 좋습니다.</p>
+        </div>
+        <div class="step">
+          <span class="step__num">02</span>
+          <h3 class="step__title">기준을 덧붙입니다</h3>
+          <p>편성, 보컬의 위치, 곡의 전개, 온도. 말로 설명할 수 있으면 검색어가 됩니다.</p>
+        </div>
+        <div class="step">
+          <span class="step__num">03</span>
+          <h3 class="step__title">결과를 틀어봅니다</h3>
+          <p>처음부터 완벽할 필요는 없습니다. 조정 문구를 덧붙여 방향만 바꾸세요.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 검색 기록 -->
+  <section class="section" id="history">
+    <div class="wrap">
+      <h2 class="section__title">검색 기록</h2>
+      <p class="section__desc">
+        자연어 입력은 똑같이 다시 쓰기 어렵습니다. 그래서 문장과 결과를 통째로 남겨둡니다.
+        기록은 <strong>이 브라우저 안에만</strong> 저장되고 서버로 보내지 않으며,
+        다음 검색 결과에 반영되지도 않습니다.
+      </p>
+
+      <div class="history__bar">
+        <span class="history__count" id="historyCount">저장된 기록 0개</span>
+        <div class="history__actions">
+          <button type="button" class="btn btn--ghost btn--sm" id="exportBtn">내보내기</button>
+          <button type="button" class="btn btn--ghost btn--sm btn--danger" id="clearBtn">전체 삭제</button>
+        </div>
+      </div>
+
+      <div class="history__list" id="historyList"></div>
+      <p class="history__empty" id="historyEmpty">아직 기록이 없습니다. 위에서 한 번 검색해보세요.</p>
+    </div>
+  </section>
+
+  <!-- 5. FAQ -->
+  <section class="section section--alt" id="faq">
+    <div class="wrap">
+      <h2 class="section__title">FAQ · 만든 이유</h2>
+
+      <div class="faq">
+        <details class="faq__item">
+          <summary>어떻게 동작하나요?</summary>
+          <p>
+            입력한 문장을 AI(Claude)가 해석해 무드 요약, 후보곡, 검색 키워드, 그리고 짧은 글을 만듭니다.
+            그다음 후보곡을 하나씩 <strong>iTunes Search API</strong>에 조회해 실제로 존재하는지 확인하고,
+            검증을 통과한 곡만 화면에 내보냅니다. AI는 “무엇을 찾을지”를 정하고,
+            실존 여부는 실제 음원 데이터가 판정합니다.
+          </p>
+        </details>
+        <details class="faq__item">
+          <summary>추천된 곡이 실제로 없는 곡일 수도 있나요?</summary>
+          <p>
+            제목과 가수가 지어내진 곡은 검증 단계에서 걸러집니다. 다만 동명이곡이나
+            리메이크 버전이 매칭될 수는 있어요. 각 곡의 미리듣기로 먼저 확인해보시길 권합니다.
+          </p>
+        </details>
+        <details class="faq__item">
+          <summary>문장은 어디서 가져온 건가요?</summary>
+          <p>
+            어디서도 가져오지 않았습니다. 기존 문학 작품을 인용하면 저작권 문제가 생기고,
+            AI가 인용문을 지어낼 위험도 큽니다. 그래서 인용 대신 <strong>매번 새로 쓰게</strong> 했습니다.
+            세상에 없던, 이 입력만을 위한 문장입니다.
+          </p>
+        </details>
+        <details class="faq__item">
+          <summary>제 검색 기록으로 취향을 학습하나요?</summary>
+          <p>
+            아니요. 기록은 브라우저의 localStorage에만 저장되고, 서버로 전송되지 않으며,
+            다음 검색에 반영되지도 않습니다. 지금 입력한 문장이 유일한 기준입니다.
+            추천 알고리즘이 사람을 자기 이력에 가두는 문제를 피하려는 의도적인 선택입니다.
+          </p>
+        </details>
+        <details class="faq__item">
+          <summary>왜 만들었나요?</summary>
+          <p>
+            음원 앱의 검색창은 곡명·가수명이라는 고유명사를 전제합니다. 그런데
+            “후렴에서 터뜨리지 않는 곡”처럼, 분명히 말로는 설명되는데
+            검색어로는 옮길 수 없는 취향이 있습니다. 그 문장을 그대로 받는 입구를 만들고 싶었습니다.
+          </p>
+        </details>
+      </div>
+
+      <p class="tech">
+        HTML · CSS · Vanilla JavaScript / Vercel Serverless Functions (Python) /
+        Claude API / iTunes Search API
+      </p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <p>무드 페어링 — 문장으로 찾는 음악</p>
+    <p class="footer__sub">음원 정보 및 미리듣기 제공: Apple iTunes Search API</p>
+  </div>
+</footer>
+
+<audio id="player" preload="none"></audio>
+<script src="/js/main.js"></script>
