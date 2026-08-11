@@ -19,6 +19,7 @@
 
   var navToggle = $("navToggle");
   var navMenu = $("navMenu");
+  var navBackdrop = $("navBackdrop");
   var form = $("pairForm");
   var queryInput = $("queryInput");
   var charCount = $("charCount");
@@ -54,20 +55,89 @@
   var currentBtn = null; // 재생 중인 버튼
 
   /* ============================================================
-     네비게이션
+     화면 전환 (View) — 스크롤이 아니라 한 번에 한 화면만 보여준다.
+     이동은 상단 ≡ 메뉴, 또는 화면 안의 버튼(data-view)으로만 가능하다.
      ============================================================ */
 
-  navToggle.addEventListener("click", function () {
-    var open = navMenu.classList.toggle("is-open");
-    navToggle.setAttribute("aria-expanded", String(open));
-    navToggle.setAttribute("aria-label", open ? "메뉴 닫기" : "메뉴 열기");
+  var VIEWS = ["home", "pair", "guide", "history", "faq"];
+  var DEFAULT_VIEW = "home";
+  var footer = document.querySelector(".footer");
+
+  function showView(name, opts) {
+    if (VIEWS.indexOf(name) === -1) name = DEFAULT_VIEW;
+    opts = opts || {};
+
+    VIEWS.forEach(function (v) {
+      var el = document.getElementById("view-" + v);
+      if (el) el.classList.toggle("is-active", v === name);
+    });
+
+    // 현재 위치를 메뉴에 표시
+    [].forEach.call(navMenu.querySelectorAll("a"), function (a) {
+      a.classList.toggle("is-current", a.dataset.view === name);
+    });
+
+    // 홈은 꽉 찬 첫 화면이므로 푸터를 감춘다
+    if (footer) footer.classList.toggle("is-hidden", name === "home");
+
+    if (name === "history") renderHistory();
+
+    closeMenu();
+    window.scrollTo(0, 0);
+
+    if (location.hash !== "#" + name) {
+      // 뒤로가기가 동작하도록 히스토리에 남긴다
+      if (opts.replace) location.replace("#" + name);
+      else location.hash = name;
+    }
+
+    if (name === "pair" && opts.focus) {
+      var el = queryInput;
+      setTimeout(function () { el.focus({ preventScroll: true }); }, 120);
+    }
+  }
+
+  function currentHash() {
+    return (location.hash || "").replace(/^#/, "");
+  }
+
+  window.addEventListener("hashchange", function () {
+    showView(currentHash(), { replace: true });
   });
 
-  navMenu.addEventListener("click", function (e) {
-    if (e.target.tagName === "A") {
-      navMenu.classList.remove("is-open");
-      navToggle.setAttribute("aria-expanded", "false");
-    }
+  // data-view 를 가진 모든 요소(메뉴 링크, 히어로 버튼, 안내 링크)가 이동 트리거
+  document.addEventListener("click", function (e) {
+    var trigger = e.target.closest("[data-view]");
+    if (!trigger) return;
+    e.preventDefault();
+    showView(trigger.dataset.view, { focus: trigger.dataset.view === "pair" });
+  });
+
+  /* ---------- 햄버거 메뉴 ---------- */
+
+  function openMenu() {
+    navMenu.classList.add("is-open");
+    navBackdrop.hidden = false;
+    navToggle.setAttribute("aria-expanded", "true");
+    navToggle.setAttribute("aria-label", "메뉴 닫기");
+  }
+
+  function closeMenu() {
+    navMenu.classList.remove("is-open");
+    navBackdrop.hidden = true;
+    navToggle.setAttribute("aria-expanded", "false");
+    navToggle.setAttribute("aria-label", "메뉴 열기");
+  }
+
+  navToggle.addEventListener("click", function () {
+    if (navMenu.classList.contains("is-open")) closeMenu();
+    else openMenu();
+  });
+
+  navBackdrop.addEventListener("click", closeMenu);
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeMenu();
   });
 
   /* ============================================================
@@ -443,7 +513,7 @@
         state.count = parseInt(countSelect.value, 10);
         state.adjust = "";
         state.excluded = [];
-        document.getElementById("pair").scrollIntoView({ behavior: "smooth" });
+        showView("pair");
         search();
       });
       acts.appendChild(again);
@@ -496,4 +566,7 @@
   });
 
   renderHistory();
+
+  // 첫 진입 — 주소에 #pair 같은 해시가 있으면 그 화면으로, 없으면 홈으로
+  showView(currentHash() || DEFAULT_VIEW, { replace: true });
 })();

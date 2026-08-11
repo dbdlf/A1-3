@@ -4,27 +4,44 @@
 <title>무드 페어링 — 문장으로 찾는 음악</title>
 <link rel="stylesheet" href="/css/style.css" />
 
-<header class="nav" id="nav">
+<header class="nav">
   <div class="nav__inner">
-    <a class="nav__logo" href="#home">
-      <span class="nav__logo-mark" aria-hidden="true"></span>
-      무드 페어링
+    <a class="nav__logo" href="#home" data-view="home">
+      <svg class="nav__logo-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <defs>
+          <linearGradient id="mpLogo" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#b9a4ff" />
+            <stop offset="1" stop-color="#e9c98a" />
+          </linearGradient>
+        </defs>
+        <!-- 말풍선(문장) 안의 재생 버튼(음악) -->
+        <path
+          d="M16 3.2C8.4 3.2 2.4 8.4 2.4 14.9c0 3.7 2 7 5.2 9.1l-1 5.1 5.6-2.9c1.2.3 2.5.4 3.8.4 7.6 0 13.6-5.2 13.6-11.7S23.6 3.2 16 3.2z"
+          fill="url(#mpLogo)" />
+        <path d="M13.2 10.6l6.6 4.3-6.6 4.3z" fill="#101018" />
+      </svg>
+      <span>무드 페어링</span>
     </a>
+
     <button class="nav__toggle" id="navToggle" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navMenu">
       <span></span><span></span><span></span>
     </button>
-    <nav class="nav__menu" id="navMenu">
-      <a href="#pair">무드 페어링</a>
-      <a href="#guide">이렇게 검색해보세요</a>
-      <a href="#history">검색 기록</a>
-      <a href="#faq">FAQ</a>
+
+    <nav class="nav__menu" id="navMenu" aria-label="주요 메뉴">
+      <a href="#home" data-view="home">홈</a>
+      <a href="#pair" data-view="pair">무드 페어링</a>
+      <a href="#guide" data-view="guide">이렇게 검색해보세요</a>
+      <a href="#history" data-view="history">검색 기록</a>
+      <a href="#faq" data-view="faq">FAQ</a>
     </nav>
   </div>
 </header>
 
+<div class="nav__backdrop" id="navBackdrop" hidden></div>
+
 <main>
-  <!-- 1. HERO -->
-  <section class="hero" id="home">
+  <!-- ===== 홈 ===== -->
+  <section class="view hero" id="view-home">
     <div class="hero__glow" aria-hidden="true"></div>
     <div class="wrap hero__inner">
       <p class="hero__eyebrow">자연어 음악 검색</p>
@@ -34,14 +51,14 @@
       <p class="hero__lead">
         모든 음원 앱의 검색창은 이름을 알아야 작동합니다.
         하지만 우리가 음악을 찾는 이유는 대개 이름이 아니라 <strong>상태</strong>죠.
-        지금의 기분·상황·취향을 그대로 적어보세요.
       </p>
-      <a class="btn btn--primary hero__cta" href="#pair">지금 찾아보기</a>
+      <button type="button" class="btn btn--primary btn--lg" data-view="pair">지금 찾아보기</button>
+      <p class="hero__hint">다른 메뉴는 오른쪽 위 <strong>≡</strong> 버튼에 있습니다.</p>
     </div>
   </section>
 
-  <!-- 2. 무드 페어링 (핵심 기능) -->
-  <section class="section" id="pair">
+  <!-- ===== 무드 페어링 ===== -->
+  <section class="view section" id="view-pair">
     <div class="wrap">
       <h2 class="section__title">무드 페어링</h2>
       <p class="section__desc">
@@ -63,7 +80,13 @@
           <span class="form__hint">10자 이상 입력해주세요</span>
         </div>
 
-        <p class="chips__label">예시로 시작해보기</p>
+        <div class="chips__head">
+          <p class="chips__label">예시로 시작해보기</p>
+          <button type="button" class="link-more" data-view="guide">
+            어떻게 써야 잘 나오나요? <span aria-hidden="true">→</span>
+          </button>
+        </div>
+
         <div class="chips" id="exampleChips">
           <button type="button" class="chip" data-fill="가사는 밝은데 멜로디는 어딘가 쓸쓸한 곡이 듣고 싶어요. 신나게 틀어놓고 혼자 조용해지는 그런 노래요.">가사는 밝은데 멜로디는 쓸쓸한</button>
           <button type="button" class="chip" data-fill="후렴에서 확 터뜨리지 않고 끝까지 눌러 담는 곡. 감정을 폭발시키는 대신 계속 참는 느낌의 노래를 찾고 있어요.">후렴에서 터뜨리지 않는 곡</button>
@@ -95,10 +118,8 @@
         <button type="submit" class="btn btn--primary btn--block" id="submitBtn">곡과 문장 받기</button>
       </form>
 
-      <!-- 상태 영역 -->
       <div class="status" id="status" role="status" aria-live="polite" hidden></div>
 
-      <!-- 결과 영역 -->
       <div class="result" id="result" hidden>
         <div class="result__head">
           <p class="result__label">이 순간을 이렇게 읽었어요</p>
@@ -143,8 +164,8 @@
     </div>
   </section>
 
-  <!-- 3. 이렇게 검색해보세요 -->
-  <section class="section section--alt" id="guide">
+  <!-- ===== 이렇게 검색해보세요 ===== -->
+  <section class="view section" id="view-guide">
     <div class="wrap">
       <h2 class="section__title">이렇게 검색해보세요</h2>
       <p class="section__desc">
@@ -190,11 +211,15 @@
           <p>처음부터 완벽할 필요는 없습니다. 조정 문구를 덧붙여 방향만 바꾸세요.</p>
         </div>
       </div>
+
+      <button type="button" class="btn btn--primary btn--block back-cta" data-view="pair">
+        이제 검색해보기
+      </button>
     </div>
   </section>
 
-  <!-- 4. 검색 기록 -->
-  <section class="section" id="history">
+  <!-- ===== 검색 기록 ===== -->
+  <section class="view section" id="view-history">
     <div class="wrap">
       <h2 class="section__title">검색 기록</h2>
       <p class="section__desc">
@@ -212,12 +237,12 @@
       </div>
 
       <div class="history__list" id="historyList"></div>
-      <p class="history__empty" id="historyEmpty">아직 기록이 없습니다. 위에서 한 번 검색해보세요.</p>
+      <p class="history__empty" id="historyEmpty">아직 기록이 없습니다. 검색을 한 번 해보세요.</p>
     </div>
   </section>
 
-  <!-- 5. FAQ -->
-  <section class="section section--alt" id="faq">
+  <!-- ===== FAQ ===== -->
+  <section class="view section" id="view-faq">
     <div class="wrap">
       <h2 class="section__title">FAQ · 만든 이유</h2>
 
