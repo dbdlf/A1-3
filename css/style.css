@@ -54,11 +54,17 @@ img { max-width: 100%; display: block; }
    화면 전환
    ============================================================ */
 
+/* 화면은 .is-active 가 붙은 하나만 보인다.
+   주의: .hero 처럼 개별 화면이 display 를 다시 지정하면 특정성이 같아
+   뒤에 오는 규칙이 이겨버린다. 그래서 화면별 display 는 반드시
+   .is-active 와 함께(특정성 0,2,0) 지정한다. */
 .view { display: none; }
-.view.is-active { display: block; animation: viewIn 0.28s ease both; }
+.view.is-active { display: block; animation: viewIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.view.hero.is-active { display: flex; align-items: center; }
 
+/* 아래에서 위로 올라오며 바뀌어 '아래로 내려간' 느낌을 준다 */
 @keyframes viewIn {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(26px); }
   to { opacity: 1; transform: none; }
 }
 
@@ -179,12 +185,13 @@ img { max-width: 100%; display: block; }
    홈 (Hero) — 첫 화면을 꽉 채운다
    ============================================================ */
 
+/* display/align-items 는 위쪽 .view.hero.is-active 에서 지정한다.
+   여기서 display 를 다시 쓰면 .view 의 display:none 을 덮어써서
+   홈 화면이 사라지지 않는다. */
 .hero {
   position: relative;
   min-height: 100vh;
   min-height: 100dvh;
-  display: flex;
-  align-items: center;
   overflow: hidden;
   padding: calc(var(--navh) + 32px) 0 56px;
 }
