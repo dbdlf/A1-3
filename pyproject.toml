@@ -1,0 +1,10 @@
+[project]
+name = "mood-pairing"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "google-genai>=2.0.0",
+]
+
+[tool.vercel]
+entrypoint = "api.pair:handler"
