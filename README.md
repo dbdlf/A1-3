@@ -5,7 +5,7 @@
 지금의 기분·상황·취향을 자유롭게 문장으로 적으면, AI가 그 맥락을 해석해
 **실존이 검증된 곡 3~5개**와 **그 순간을 위해 새로 쓰인 짧은 글**을 함께 건네는 웹 서비스입니다.
 
-**배포 URL:** https://mood-pairing.vercel.app *(배포 후 실제 주소로 교체)*
+**배포 URL:** https://mood-pairing-gamma.vercel.app
 
 ---
 
