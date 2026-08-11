@@ -228,3 +228,4 @@ GitHub 저장소를 Vercel에 연결해두면 push할 때마다 자동 배포됩
 ## 라이선스 / 출처
 
 음원 메타데이터, 앨범 아트, 30초 미리듣기는 Apple iTunes Search API를 통해 제공됩니다.
+
