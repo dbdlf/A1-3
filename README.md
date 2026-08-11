@@ -53,7 +53,7 @@ LLM에게 곡을 추천하게 하면 **존재하지 않는 곡을 실존 가수 
 |---|---|
 | 프론트엔드 | HTML · CSS · Vanilla JavaScript (프레임워크 없음) |
 | 백엔드 | Vercel Serverless Functions (Python 3.12) |
-| AI | Google Gemini API (`gemini-2.5-flash`) — 구조화 출력(responseSchema) |
+| AI | Google Gemini API (`gemini-3.6-flash`) — 구조화 출력(responseSchema) |
 | 음원 데이터 | iTunes Search API (API 키 불필요) |
 | 저장소 | 브라우저 localStorage (검색 기록 · 서버 전송 없음) |
 | 배포 | GitHub → Vercel 자동 배포 |
@@ -214,10 +214,9 @@ GitHub 저장소를 Vercel에 연결해두면 push할 때마다 자동 배포됩
 
 ## 알려진 제약
 
-- **Gemini 무료 티어에 분당·일일 요청 제한이 있습니다.** `gemini-2.5-flash` 기준으로
-  분당 요청 수가 10회 안팎이라, 연속으로 빠르게 검색하면 429 오류가 날 수 있습니다
-  (사용자에게는 "1분 뒤에 다시 시도해주세요"로 안내됩니다).
-  정확한 한도는 프로젝트마다 다르므로 [AI Studio 콘솔](https://aistudio.google.com/)에서 확인하세요.
+- **Gemini 무료 티어에 분당·일일 요청 제한이 있습니다.** 연속으로 빠르게 검색하면
+  429 오류가 날 수 있습니다 (사용자에게는 "1분 뒤에 다시 시도해주세요"로 안내됩니다).
+  정확한 한도는 모델·프로젝트마다 다르므로 [AI Studio 콘솔](https://aistudio.google.com/)에서 확인하세요.
 - iTunes Search API에도 요청 빈도 제한이 있습니다(대략 분당 20회 수준으로 알려짐).
   후보곡 검증에 곡당 1회씩 요청하므로, 연속으로 여러 번 검색하면 일시적으로 결과가 줄 수 있습니다.
 - `previewUrl`은 선택 필드라 미리듣기가 없는 곡이 있습니다. 이 경우 재생 버튼이 비활성화됩니다.
